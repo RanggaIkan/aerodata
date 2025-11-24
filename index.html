@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AeroData — Advanced Weather Intelligence (Indonesia only)</title>
+
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Loader -->
+    <div id="loader" role="status" aria-live="polite" aria-hidden="false">
+        <div class="loader-card" aria-hidden="false">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div
+                    style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#3a7bd5);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                    <i class="fa-solid fa-satellite-dish" style="color:#012"></i>
+                </div>
+                <div style="text-align:left">
+                    <div style="font-weight:700">AeroData</div>
+                    <div style="font-size:0.85rem;color:var(--muted);margin-top:2px">Menghubungkan ke sumber cuaca...
+                    </div>
+                </div>
+            </div>
+            <div class="spinner" aria-hidden="true"></div>
+            <div id="loader-text" style="color:var(--muted);font-size:0.95rem">Mengambil data atmosfer...</div>
+        </div>
+    </div>
+
+    <div class="container" id="app" aria-live="polite">
+        <header class="top" role="banner">
+            <div class="brand" aria-hidden="false">
+                <div class="logo" aria-hidden="true"><i class="fa-solid fa-cloud-bolt" style="color:#fff;"></i></div>
+                <div>
+                    <h1>AeroData</h1>
+                    <small>Advanced Weather Intelligence — Untuk Indonesia</small>
+                </div>
+            </div>
+
+            <div class="controls" role="search" aria-label="Cari lokasi">
+                <div class="search" role="search">
+                    <input id="city-input" placeholder="Cari wilayah di Indonesia (contoh: Menteng, Jakarta Pusat)..."
+                        aria-label="Input pencarian lokasi" />
+                    <button id="btn-search" title="Cari"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+                </div>
+
+                <button id="btn-geo" class="btn-geo" title="Gunakan lokasi saya" aria-label="Gunakan lokasi saya"><i
+                        class="fa-solid fa-crosshairs"></i></button>
+
+                <div style="display:flex;gap:8px;align-items:center;margin-left:6px;">
+                    <button id="unit-toggle" class="toggle" title="Toggle Celsius / Fahrenheit"
+                        aria-pressed="false">°C</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="status-row">
+            <div class="status-left">
+                <div class="banner" id="connection-state">Online</div>
+                <div class="banner" id="last-updated">Terakhir diperbarui: -</div>
+            </div>
+            <div class="status-right">
+                <div class="banner" id="global-clock" aria-live="polite">WIB --:--</div>
+            </div>
+        </div>
+
+        <main class="dashboard" role="main">
+            <!-- LEFT: Hero & Stats -->
+            <aside class="card left" aria-labelledby="lbl-hero">
+
+                <div class="video-wrap" id="video-wrap" aria-hidden="true" style="display:none">
+                    <video id="weather-video" autoplay muted loop playsinline></video>
+                </div>
+
+                <section class="hero" id="lbl-hero">
+                    <div class="date" id="display-date">--</div>
+                    <div class="city" id="display-city">Jakarta</div>
+                    <div class="local-time" id="local-time">Waktu setempat: --:--</div>
+
+                    <img id="display-icon" alt="Ikon cuaca" class="icon"
+                        src="https://cdn-icons-png.flaticon.com/512/1163/1163657.png"
+                        style="width:140px; height:140px; margin: 10px auto; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));" />
+
+                    <div class="big-temp" id="display-temp">--°</div>
+                    <div class="description" id="display-desc">Memuat data...</div>
+
+                    <div id="alert-box" class="alert safe" role="status" aria-live="polite">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <div style="margin-left:8px">Kondisi atmosfer stabil</div>
+                    </div>
+                </section>
+
+                <div class="stats-grid" aria-hidden="false">
+                    <div class="stat" title="Peluang hujan">
+                        <i class="fa-solid fa-cloud-showers-heavy"></i>
+                        <div>
+                            <div class="meta">Hujan</div>
+                            <div class="val" id="val-rain">--%</div>
+                        </div>
+                    </div>
+                    <div class="stat" title="Kecepatan angin">
+                        <i class="fa-solid fa-wind"></i>
+                        <div>
+                            <div class="meta">Angin</div>
+                            <div class="val" id="val-wind">-- km/j</div>
+                        </div>
+                    </div>
+                    <div class="stat" title="Kelembaban">
+                        <i class="fa-solid fa-droplet"></i>
+                        <div>
+                            <div class="meta">Kelembaban</div>
+                            <div class="val" id="val-hum">--%</div>
+                        </div>
+                    </div>
+                    <div class="stat" title="UV Index">
+                        <i class="fa-solid fa-sun"></i>
+                        <div>
+                            <div class="meta">UV Index</div>
+                            <div class="val" id="val-uv">--</div>
+                        </div>
+                    </div>
+                    <div class="stat" title="Visibilitas">
+                        <i class="fa-solid fa-eye"></i>
+                        <div>
+                            <div class="meta">Visibilitas</div>
+                            <div class="val" id="val-vis">-- km</div>
+                        </div>
+                    </div>
+                    <div class="stat" title="Tekanan udara">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <div>
+                            <div class="meta">Tekanan</div>
+                            <div class="val" id="val-pres">-- hPa</div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="small">
+                    <div>Data dari Open‑Meteo</div>
+                    <div style="font-size:0.8rem;color:rgba(255,255,255,0.6)">AeroData ID</div>
+                </footer>
+            </aside>
+            <!-- RIGHT: Insights, Hourly, Daily -->
+            <section class="right-panel">
+                <div class="card insight" role="region" aria-label="AeroData intelligence">
+                    <i class="fa-solid fa-microchip" style="font-size:20px;color:var(--primary)"></i>
+                    <div>
+                        <div style="font-weight:700;color:var(--primary);margin-bottom:6px">AeroData Intelligence</div>
+                        <div id="ai-text" style="color:#d8f6ff">Menganalisis kondisi dan memberi rekomendasi singkat.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card forecast-box" role="region" aria-label="Perkiraan per jam dan harian">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <strong style="font-size:1rem;color:var(--muted)">Prakiraan Per Jam (24h)</strong>
+                        <div style="color:var(--muted);font-size:0.9rem" id="tz-info">Zone</div>
+                    </div>
+
+                    <div class="hourly-track" id="hourly-container" tabindex="0" aria-live="polite">
+                        <!-- hourly items injected here -->
+                    </div>
+
+                    <div style="height:12px"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <strong style="font-size:1rem;color:var(--muted)">Prakiraan 7 Hari</strong>
+                        <div style="color:var(--muted);font-size:0.9rem">Ringkasan</div>
+                    </div>
+
+                    <div class="daily-list" id="daily-container" aria-live="polite">
+                        <!-- daily injected here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // ------------------------------
+        // Globals & UI refs
+        // ------------------------------
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const displayCity = document.getElementById('display-city');
+        const displayDate = document.getElementById('display-date');
+        const displayTemp = document.getElementById('display-temp');
+        const displayDesc = document.getElementById('display-desc');
+        const displayIcon = document.getElementById('display-icon');
+        const alertBox = document.getElementById('alert-box');
+        const aiText = document.getElementById('ai-text');
+        const hourlyContainer = document.getElementById('hourly-container');
+        const dailyContainer = document.getElementById('daily-container');
+        const lastUpdated = document.getElementById('last-updated');
+        const connectionState = document.getElementById('connection-state');
+        const tzInfo = document.getElementById('tz-info');
+        const localTimeEl = document.getElementById('local-time');
+        const globalClock = document.getElementById('global-clock');
+        const videoWrap = document.getElementById('video-wrap');
+        const weatherVideo = document.getElementById('weather-video');
+
+        // Unit toggle
+        let UNIT = localStorage.getItem('aerodata_unit') || 'C';
+        const unitToggle = document.getElementById('unit-toggle');
+        unitToggle.innerText = UNIT === 'C' ? '°C' : '°F';
+        unitToggle.setAttribute('aria-pressed', UNIT === 'F');
+
+        unitToggle.addEventListener('click', () => {
+            UNIT = (UNIT === 'C') ? 'F' : 'C';
+            localStorage.setItem('aerodata_unit', UNIT);
+            unitToggle.innerText = UNIT === 'C' ? '°C' : '°F';
+            unitToggle.setAttribute('aria-pressed', UNIT === 'F');
+            if (lastData) renderUI(lastData.data, lastData.city);
+        });
+
+        // Simple safe fetch with timeout
+        async function safeFetch(url, opts = {}, timeout = 12000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const res = await fetch(url, { ...opts, signal: controller.signal });
+                clearTimeout(id);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                clearTimeout(id);
+                throw e;
+            }
+        }
+
+        // Online/offline indicators
+        function updateOnlineStatus() {
+            connectionState.innerText = navigator.onLine ? 'Online' : 'Offline — data mungkin tidak terbaru';
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        // Global WIB clock (kept)
+        function tickGlobalClock() {
+            const now = new Date();
+            globalClock.innerText = 'WIB ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+        setInterval(tickGlobalClock, 1000);
+        tickGlobalClock();
+
+        // weather code mapping (WMO)
+        const weatherMap = {
+            0: { label: "Langit Bersih", icon: "https://cdn-icons-png.flaticon.com/512/3222/3222800.png", group: "clear" },
+            1: { label: "Cerah Berawan", icon: "https://cdn-icons-png.flaticon.com/512/1163/1163661.png", group: "clear" },
+            2: { label: "Berawan", icon: "https://cdn-icons-png.flaticon.com/512/1163/1163624.png", group: "cloudy" },
+            3: { label: "Mendung Gelap", icon: "https://cdn-icons-png.flaticon.com/512/414/414927.png", group: "cloudy" },
+            45: { label: "Kabut", icon: "https://cdn-icons-png.flaticon.com/512/4005/4005901.png", group: "cloudy" },
+            48: { label: "Berkabut", icon: "https://cdn-icons-png.flaticon.com/512/4005/4005901.png", group: "cloudy" },
+            51: { label: "Gerimis Ringan", icon: "https://cdn-icons-png.flaticon.com/512/4005/4005817.png", group: "rain" },
+            53: { label: "Gerimis Sedang", icon: "https://cdn-icons-png.flaticon.com/512/4005/4005817.png", group: "rain" },
+            55: { label: "Gerimis Lebat", icon: "https://cdn-icons-png.flaticon.com/512/4005/4005817.png", group: "rain" },
+            61: { label: "Hujan Ringan", icon: "https://cdn-icons-png.flaticon.com/512/1163/1163627.png", group: "rain" },
+            63: { label: "Hujan Sedang", icon: "https://cdn-icons-png.flaticon.com/512/2469/2469994.png", group: "rain" },
+            65: { label: "Hujan Lebat", icon: "https://cdn-icons-png.flaticon.com/512/2469/2469994.png", group: "rain" },
+            66: { label: "Hujan Beku Ringan", icon: "https://cdn-icons-png.flaticon.com/512/412/412142.png", group: "snow" },
+            67: { label: "Hujan Beku Berat", icon: "https://cdn-icons-png.flaticon.com/512/412/412142.png", group: "snow" },
+            71: { label: "Salju Ringan", icon: "https://cdn-icons-png.flaticon.com/512/642/642102.png", group: "snow" },
+            73: { label: "Salju Sedang", icon: "https://cdn-icons-png.flaticon.com/512/642/642102.png", group: "snow" },
+            75: { label: "Salju Lebat", icon: "https://cdn-icons-png.flaticon.com/512/642/642102.png", group: "snow" },
+            80: { label: "Hujan Lokal", icon: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png", group: "rain" },
+            81: { label: "Hujan Lokal Lebih", icon: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png", group: "rain" },
+            95: { label: "Badai Petir", icon: "https://cdn-icons-png.flaticon.com/512/1146/1146860.png", group: "storm" }
+        };
+
+        function getWInfo(code) {
+            return weatherMap[code] || { label: "Tidak Diketahui", icon: "https://cdn-icons-png.flaticon.com/512/1163/1163657.png", group: "unknown" };
+        }
+
+        // Unit conversion
+        function toDisplayTemp(celsius) {
+            if (celsius === null || celsius === undefined) return '--';
+            if (UNIT === 'C') return `${Math.round(celsius)}°`;
+            return `${Math.round((celsius * 9 / 5) + 32)}°`;
+        }
+
+        // keep last data to re-render on unit toggle
+        let lastData = null;
+
+        // local clock for selected city's timezone
+        let localClockInterval = null;
+        function startLocalClock(timezone) {
+            if (localClockInterval) clearInterval(localClockInterval);
+            function tick() {
+                try {
+                    const now = new Date();
+                    const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: timezone };
+                    localTimeEl.innerText = 'Waktu setempat: ' + now.toLocaleTimeString('id-ID', opts);
+                } catch (e) {
+                    localTimeEl.innerText = 'Waktu setempat: --:--';
+                }
+            }
+            tick();
+            localClockInterval = setInterval(tick, 1000);
+        }
+
+        // Choose video based on weather group (these are placeholders - you will replace files)
+        function setWeatherVideo(group) {
+            // placeholder filenames — replace /videos/rain.mp4 etc. with your own later
+            const mapping = {
+                rain: 'videos/rain.mp4',
+                storm: 'videos/storm.mp4',
+                clear: 'videos/clear.mp4',
+                cloudy: 'videos/cloudy.mp4',
+                snow: 'videos/snow.mp4',
+                unknown: ''
+            };
+            const src = mapping[group] || '';
+            if (src) {
+                weatherVideo.src = src;
+                videoWrap.style.display = 'block';
+            } else {
+                weatherVideo.removeAttribute('src');
+                videoWrap.style.display = 'none';
+            }
+        }
+
+        // Render UI
+        function renderUI(data, cityLabel) {
+            try {
+                const cur = data.current_weather || {};
+                const hourly = data.hourly || {};
+                const daily = data.daily || {};
+                const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                // labels
+                displayCity.innerText = cityLabel || 'Lokasi';
+                displayDate.innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                tzInfo.innerText = tz;
+
+                // choose weathercode for hero
+                const code = cur.weathercode ?? (hourly.weather_code?.[0] ?? 0);
+                const winfo = getWInfo(code);
+                displayDesc.innerText = winfo.label;
+                displayIcon.src = winfo.icon;
+                displayIcon.alt = winfo.label;
+
+                // temps
+                const tempC = cur.temperature ?? (hourly.temperature_2m?.[0] ?? null);
+                displayTemp.innerText = toDisplayTemp(tempC);
+
+                // stats (attempt to find nearest hourly index)
+                const times = hourly.time || [];
+                // find nearest time to now in ISO hours
+                const now = new Date();
+                const nowPrefix = now.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+                let startIdx = 0;
+                for (let i = 0; i < times.length; i++) {
+                    if (times[i].startsWith(nowPrefix)) { startIdx = i; break; }
+                }
+                const idx = startIdx || 0;
+                const rainProb = hourly.precipitation_probability?.[idx] ?? 0;
+                const windSpeed = cur.windspeed ?? '--';
+                // humidity may not be in current response; use hourly relative humidity if available
+                const hum = hourly.relativehumidity_2m?.[idx] ?? '--';
+                const uv = daily.uv_index_max?.[0] ?? '--';
+                const vis = hourly.visibility?.[idx] ?? '--';
+                const pres = data.elevation ? (data.elevation + ' m') : (data.current_weather?.pressure ?? (data.hourly_pressure_msl?.[idx] ?? '--'));
+
+                document.getElementById('val-rain').innerText = `${rainProb ?? '--'}%`;
+                document.getElementById('val-wind').innerText = `${windSpeed} km/j`;
+                document.getElementById('val-hum').innerText = `${hum ?? '--'}%`;
+                document.getElementById('val-uv').innerText = uv ?? '--';
+                document.getElementById('val-vis').innerText = (typeof vis === 'number') ? `${(vis / 1000).toFixed(1)} km` : `${vis}`;
+                document.getElementById('val-pres').innerText = (pres ? `${pres}` : '--');
+
+                // alert logic using gust if available or wind
+                const gusts = data.hourly?.windgusts_10m?.[idx] ?? null;
+                if (gusts !== null && gusts > 60) {
+                    alertBox.className = 'alert danger';
+                    alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><div style="margin-left:8px">BAHAYA: Kecepatan angin ${gusts} km/j — lindungi diri</div>`;
+                } else if (gusts !== null && gusts > 40) {
+                    alertBox.className = 'alert warn';
+                    alertBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i><div style="margin-left:8px">Waspada: Angin kencang ${gusts} km/j</div>`;
+                } else {
+                    alertBox.className = 'alert safe';
+                    alertBox.innerHTML = `<i class="fa-solid fa-shield-check"></i><div style="margin-left:8px">Kecepatan angin aman</div>`;
+                }
+
+                // AI summary (friendly)
+                let ai = `Saat ini terpantau <strong>${winfo.label.toLowerCase()}</strong>. `;
+                if (rainProb > 60) ai += 'Kemungkinan hujan tinggi — siapkan payung/penutup. ';
+                else if (tempC !== null && tempC > 33) ai += 'Suhu sangat panas — pastikan terhidrasi. ';
+                else ai += 'Kondisi cukup baik untuk beraktivitas di luar. ';
+                if (gusts !== null && gusts > 40) ai += 'Waspada angin kencang.';
+                aiText.innerHTML = ai;
+
+                // start local clock for selected timezone
+                startLocalClock(tz);
+
+                // set video based on group
+                setWeatherVideo(winfo.group);
+
+                // HOURLY: show next 24 hours
+                hourlyContainer.innerHTML = '';
+                const temps = hourly.temperature_2m || [];
+                const wcodes = hourly.weather_code || [];
+                const probs = hourly.precipitation_probability || [];
+                const wins = hourly.windspeed_10m || [];
+                const visses = hourly.visibility || [];
+
+                for (let i = startIdx; i < Math.min(startIdx + 24, times.length); i++) {
+                    const t = new Date(times[i]);
+                    const label = t.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const tp = temps[i] ?? '--';
+                    const codei = wcodes[i] ?? 0;
+                    const p = probs[i] ?? 0;
+                    const windi = wins[i] ?? '--';
+                    const visx = visses[i] ?? '--';
+                    const w = getWInfo(codei);
+
+                    const hourDiv = document.createElement('div');
+                    hourDiv.className = 'hour' + (i === startIdx ? ' active' : '');
+                    hourDiv.tabIndex = 0;
+                    // data-tip for custom tooltip (line breaks allowed)
+                    const tip = `Cuaca: ${w.label}\nSuhu: ${Math.round(tp)}°C\nHujan: ${p}%\nAngin: ${windi} km/j\nVisibilitas: ${typeof visx === 'number' ? (visx / 1000).toFixed(1) + ' km' : visx}`;
+                    hourDiv.setAttribute('data-tip', tip);
+                    hourDiv.innerHTML = `
+                        <div style="font-size:0.85rem;color:var(--muted)">${label}</div>
+                        <img src="${w.icon}" alt="${w.label}" width="44" style="margin:6px 0" />
+                        <div style="font-weight:700">${toDisplayTemp(tp)}</div>
+                        <div style="font-size:0.82rem;color:var(--muted)">${p}% <i class="fa-solid fa-umbrella" style="margin-left:6px;color:var(--muted)"></i></div>
+                    `;
+                    hourlyContainer.appendChild(hourDiv);
+
+                    // keyboard selection to show more detail could be added - simple focus effect included
+                }
+
+                // DAILY: up to 7
+                dailyContainer.innerHTML = '';
+                const days = daily.time || [];
+                const tmax = daily.temperature_2m_max || [];
+                const tmin = daily.temperature_2m_min || [];
+                const dWCodes = daily.weather_code || [];
+
+                for (let i = 0; i < Math.min(days.length, 7); i++) {
+                    const d = new Date(days[i]);
+                    const dow = d.toLocaleDateString('id-ID', { weekday: 'short' });
+                    const w = getWInfo(dWCodes[i] ?? 0);
+                    const div = document.createElement('div');
+                    div.className = 'daily';
+                    div.innerHTML = `
+                        <div style="font-size:0.85rem;color:var(--muted)">${dow}</div>
+                        <img src="${w.icon}" alt="${w.label}" width="40" style="margin:6px 0"/>
+                        <div style="font-weight:700">${toDisplayTemp(tmax[i] ?? '--')}</div>
+                        <div style="font-size:0.85rem;color:var(--muted)">${toDisplayTemp(tmin[i] ?? '--')}</div>
+                    `;
+                    dailyContainer.appendChild(div);
+                }
+
+                lastUpdated.innerText = `Terakhir diperbarui: ${new Date().toLocaleString('id-ID')}`;
+            } catch (e) {
+                console.error('Render error', e);
+            }
+        }
+
+        // ------------------------------
+        // Geocoding: Restrict to Indonesia only
+        // ------------------------------
+        // We'll use Open-Meteo geocoding API for search and reverse geocoding.
+        // Enforce country_code === 'ID' for allowing fetchWeather.
+        async function searchLocation(q) {
+            if (!q || !q.trim()) return;
+            loader.style.display = 'flex';
+            loaderText.innerText = 'Mencari lokasi (hanya Indonesia)...';
+            try {
+                const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=id&format=json`;
+                const json = await safeFetch(url, {}, 9000);
+                if (!json.results || !json.results.length) {
+                    loader.style.display = 'none';
+                    alert('Lokasi tidak ditemukan. Pastikan nama wilayah di Indonesia dan coba lagi.');
+                    return;
+                }
+
+                // prefer a result with country_code === 'ID'
+                const idResult = json.results.find(r => (r.country_code && r.country_code.toUpperCase() === 'ID'));
+                if (!idResult) {
+                    loader.style.display = 'none';
+                    // nice message and highlight input
+                    alert('Maaf — aplikasi ini hanya menerima lokasi di Indonesia. Silakan masukkan nama wilayah di Indonesia.');
+                    const inp = document.getElementById('city-input');
+                    inp.focus();
+                    inp.select();
+                    return;
+                }
+
+                const { latitude, longitude, name, admin1, country } = idResult;
+                const label = `${name}${admin1 ? ', ' + admin1 : ''}`;
+                // now fetch weather (using timezone=auto in API)
+                fetchWeather(latitude, longitude, label);
+            } catch (e) {
+                console.error(e);
+                loader.style.display = 'none';
+                alert('Gagal mencari lokasi. Periksa koneksi internet Anda.');
+            }
+        }
+
+        // Reverse geocode: ensure coords are in Indonesia before fetching
+        async function reverseAndFetch(lat, lon) {
+            loader.style.display = 'flex';
+            loaderText.innerText = 'Memeriksa lokasi...';
+            try {
+                const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1&language=id&format=json`;
+                const json = await safeFetch(url, {}, 9000);
+                if (!json.results || !json.results.length) {
+                    loader.style.display = 'none';
+                    alert('Gagal menentukan lokasi — coba lagi.');
+                    return;
+                }
+                const res = json.results[0];
+                if (!res.country_code || res.country_code.toUpperCase() !== 'ID') {
+                    loader.style.display = 'none';
+                    alert('Lokasi Anda berada di luar Indonesia. Aplikasi ini hanya untuk wilayah Indonesia.');
+                    return;
+                }
+                const label = `${res.name}${res.admin1 ? ', ' + res.admin1 : ''}`;
+                fetchWeather(lat, lon, label);
+            } catch (e) {
+                console.error(e);
+                loader.style.display = 'none';
+                alert('Gagal memeriksa lokasi. Periksa izin lokasi & koneksi.');
+            }
+        }
+
+        // ------------------------------
+        // Weather fetch
+        // ------------------------------
+        async function fetchWeather(lat, lon, city) {
+            loader.style.display = 'flex';
+            loaderText.innerText = 'Mengambil data cuaca...';
+            try {
+                // Request current + hourly + daily; timezone=auto to get tz string
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,weather_code,visibility,relativehumidity_2m,windspeed_10m,windgusts_10m,winddirection_10m&daily=uv_index_max,temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
+                const data = await safeFetch(url, {}, 12000);
+                lastData = { data, city };
+                renderUI(data, city);
+                loader.style.display = 'none';
+            } catch (e) {
+                console.error(e);
+                loaderText.innerText = 'Gagal mengambil data — periksa koneksi';
+                setTimeout(() => loader.style.display = 'none', 900);
+                alert('Gagal mengambil data cuaca. Silakan coba lagi.');
+            }
+        }
+
+        // ------------------------------
+        // Events
+        // ------------------------------
+        document.getElementById('btn-search').addEventListener('click', () => searchLocation(document.getElementById('city-input').value));
+        document.getElementById('city-input').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(e.target.value); });
+
+        document.getElementById('btn-geo').addEventListener('click', () => {
+            if (!navigator.geolocation) { alert('Geolocation tidak didukung oleh browser Anda.'); return; }
+            loader.style.display = 'flex';
+            loaderText.innerText = 'Mengambil lokasi GPS...';
+            navigator.geolocation.getCurrentPosition(pos => {
+                reverseAndFetch(pos.coords.latitude, pos.coords.longitude);
+            }, err => {
+                loader.style.display = 'none';
+                alert('Izin lokasi ditolak atau lokasi tidak tersedia.');
+            }, { timeout: 10000 });
+        });
+
+        // Initialize default city (Jakarta Pusat)
+        fetchWeather(-6.2088, 106.8456, 'Jakarta Pusat');
+
+        // Allow closing loader with ESC if needed
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && loader.style.display !== 'none') {
+                loader.style.display = 'none';
+            }
+        });
+
+        // Accessibility: announce if user tries to search non-ID country (handled via alert + focus)
+    </script>
+</body>
+
+</html>
